@@ -739,6 +739,7 @@ class AsyncSocket:
         loop = asyncio.get_running_loop()
         time_limit = time() + timeout
         remaining_time = timeout
+        self._icmp_sock._sock.settimeout(timeout)
 
         try:
             while True:
