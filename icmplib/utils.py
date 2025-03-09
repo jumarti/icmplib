@@ -34,7 +34,8 @@ from os import getpid
 from re import match
 from random import choices
 import aiodns
-
+from async_lru import alru_cache
+import time
 from .exceptions import NameLookupError
 
 
@@ -117,6 +118,16 @@ def resolve(name, family=None):
 
 
 async def async_resolve(name, family=None, timeout=5):
+
+    cache_stamp = time.monotonic()//30
+    result = await _async_resolve(cache_stamp=cache_stamp,name=name, family=family, timeout=timeout)
+    if 'error' in result:
+        raise NameLookupError(name) from result['error']
+    
+    return result
+
+@alru_cache(maxsize=10)
+async def _async_resolve(cache_stamp, name, family=None, timeout=5):
     '''
     Resolve a hostname or FQDN to an IP address. Depending on the name
     specified in parameters, several IP addresses may be returned.
@@ -143,6 +154,7 @@ async def async_resolve(name, family=None, timeout=5):
         cannot be resolved.
 
     '''
+    _ = cache_stamp
     if family == 6:
         _family = socket.AF_INET6
     else:
@@ -154,9 +166,15 @@ async def async_resolve(name, family=None, timeout=5):
             resolver.gethostbyname(name, _family), 
             timeout=timeout
         )
-        return lookup.addresses
+        return {
+            "addresses":lookup.addresses
+        }
     except Exception as error:
-        raise NameLookupError(name) from error
+        # raise NameLookupError(name) from error
+        return {
+            "error":error
+        }
+
 
 
 
