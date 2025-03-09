@@ -166,7 +166,7 @@ def ping(address, count=4, interval=1, timeout=2, id=None, source=None,
 
 
 async def async_ping(address, count=4, interval=1, timeout=2, id=None,
-        source=None, family=None, privileged=True, **kwargs):
+        source=None, family=None, privileged=True, dns_timeout=5, **kwargs):
     '''
     Send ICMP Echo Request packets to a network host.
 
@@ -260,7 +260,7 @@ async def async_ping(address, count=4, interval=1, timeout=2, id=None,
 
     '''
     if is_hostname(address):
-        result = await async_resolve(address, family=family, timeout=timeout)
+        result = await async_resolve(address, family=family, timeout=dns_timeout)
         address = result[0]
 
     if is_ipv6_address(address):
