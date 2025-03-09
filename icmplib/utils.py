@@ -124,7 +124,7 @@ async def async_resolve(name, family=None, timeout=5):
     if 'error' in result:
         raise NameLookupError(name) from result['error']
     
-    return result
+    return result["addresses"]
 
 @alru_cache(maxsize=10)
 async def _async_resolve(cache_stamp, name, family=None, timeout=5):
