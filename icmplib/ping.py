@@ -260,7 +260,8 @@ async def async_ping(address, count=4, interval=1, timeout=2, id=None,
 
     '''
     if is_hostname(address):
-        address = (await async_resolve(address, family))[0]
+        result = await async_resolve(address, family=family, timeout=timeout)
+        address = result[0]
 
     if is_ipv6_address(address):
         _Socket = ICMPv6Socket

@@ -33,6 +33,7 @@ from sys import platform
 from os import getpid
 from re import match
 from random import choices
+import aiodns
 
 from .exceptions import NameLookupError
 
@@ -105,11 +106,6 @@ def resolve(name, family=None):
         else:
             _family = socket.AF_INET
 
-        lookup = socket.getaddrinfo(
-            host=name,
-            port=None,
-            family=_family,
-            type=socket.SOCK_DGRAM)
 
         return [address[4][0] for address in lookup]
 
@@ -120,7 +116,7 @@ def resolve(name, family=None):
     raise NameLookupError(name)
 
 
-async def async_resolve(name, family=None):
+async def async_resolve(name, family=None, timeout=5):
     '''
     Resolve a hostname or FQDN to an IP address. Depending on the name
     specified in parameters, several IP addresses may be returned.
@@ -147,27 +143,21 @@ async def async_resolve(name, family=None):
         cannot be resolved.
 
     '''
+    if family == 6:
+        _family = socket.AF_INET6
+    else:
+        _family = socket.AF_INET
+    
+    resolver = aiodns.DNSResolver()
     try:
-        if family == 6:
-            _family = socket.AF_INET6
-        else:
-            _family = socket.AF_INET
+        lookup = await asyncio.wait_for(
+            resolver.gethostbyname(name, _family), 
+            timeout=timeout
+        )
+        return lookup.addresses
+    except Exception as error:
+        raise NameLookupError(name) from error
 
-        loop = asyncio.get_running_loop()
-
-        lookup = await loop.getaddrinfo(
-            host=name,
-            port=None,
-            family=_family,
-            type=socket.SOCK_DGRAM)
-
-        return [address[4][0] for address in lookup]
-
-    except OSError:
-        if not family:
-            return await async_resolve(name, 6)
-
-    raise NameLookupError(name)
 
 
 def is_hostname(name):
